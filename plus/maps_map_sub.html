@@ -1,0 +1,101 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+		<meta name="HandheldFriendly" content="true"/>
+		<meta name="MobileOptimized" content="320"/>
+		<link rel="stylesheet" href="../css/common.css" type="text/css" charset="utf-8"/>
+		<title>Hello</title>
+		<script type="text/javascript" src="../js/common.js"></script>
+		<script type="text/javascript" src="../js/immersed.js" ></script>
+		<script type="text/javascript">
+			var em = null,
+				map = null,
+				polyline = null;
+			var marker;
+			var watchId;
+			var locationArr = [];
+			// H5 plus事件处理
+			function plusReady() {
+				// 确保DOM解析完成
+				if(!em || !window.plus || map) {
+					return
+				};
+				map = new plus.maps.Map("map");
+				map.centerAndZoom( new plus.maps.Point(114.347292,34.568716), 15);
+				drawIcon(114.347292,34.568716);
+				initPolyLine();
+			}
+			if(window.plus) {
+				plusReady();
+			} else {
+				document.addEventListener("plusready", plusReady, false);
+			}
+			// DOMContentloaded事件处理
+			document.addEventListener("DOMContentLoaded", function() {
+				em = document.getElementById("map");
+				plusReady();
+			}, false);
+			//产生定位点
+			function drawIcon(lng,lat) {
+				marker=new plus.maps.Marker(new plus.maps.Point(lng,lat));
+				marker.setIcon("/logo.png");
+				marker.setLabel("这里哦");
+				var bubble = new plus.maps.Bubble("HI");
+				marker.setBubble(bubble);
+			}
+			//动态画轨迹
+			function initPolyLine() {
+				polyline = new plus.maps.Polyline( [new plus.maps.Point(114.347292,34.568716)] );
+				map.addOverlay(polyline);
+			}
+			//定位成功处理
+			function geoInf( position ) {
+				marker.setPoint(new plus.maps.Point(position.coords.latitude,position.coords.longitude));
+				locationArr.push(new plus.maps.Point(position.coords.latitude,position.coords.longitude));
+				polyline.setPath( locationArr );
+			}
+			//获取地理位置
+			function getPos() {
+				outSet( "获取位置信息:" );
+				plus.geolocation.getCurrentPosition( geoInf, function ( e ) {
+					outSet( "获取位置信息失败："+e.message );
+				}, {geocode:false} );
+			}
+			//监测位置
+			function watchPos() {
+				if ( watchId ) {
+					return;
+				}
+				watchId = plus.geolocation.watchPosition( function ( p ) {
+					outSet( "监听位置变化信息:" );
+					geoInf( p );
+				}, function ( e ) {
+					outSet( "监听位置变化信息失败："+e.message );
+				}, {geocode:false} );
+			}
+			//清楚位置监测
+			function clearWatch() {
+				if ( watchId ) {
+					outSet( "停止监听位置变化信息" );
+					plus.geolocation.clearWatch( watchId );
+					watchId = null;
+				}
+			}
+		</script>
+		
+		<style type="text/css">
+			html,body{
+				overflow:hidden;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map">地图加载中...</div>
+		<div class="button" style="margin:.8em auto;width:50%" onclick="getPos">获取位置</div>
+		<div class="button" style="margin:.2em auto;width:50%" onclick="watchPos">开始监听位置变化</div>
+		<div class="button" style="margin:.5em auto;width:50%" onclick="clearWatch">停止监听位置变化</div>
+	</body>
+	
+</html>

@@ -1,0 +1,210 @@
+<!DOCTYPE HTML>
+<html>
+	<head>
+		<meta charset="utf-8"/>
+		<meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+		<meta name="HandheldFriendly" content="true"/>
+		<meta name="MobileOptimized" content="320"/>
+		<title>Hello H5+</title>
+		<script type="text/javascript" src="../js/common.js"></script>
+		<script type="text/javascript" src="../js/sql.js"></script>
+		<script type="text/javascript" src="../js/jquery.mini.js"></script>
+		<script type="text/javascript">
+			var ws=null,wo=null,netstatus = null,sqlTool = null,sqlTable = null,over=true;
+			var em=null,map=null,pcenter=null;
+			var polyline = null,marker = null,watchId = null,interval = null,start=false;
+			var lastLng = null,lastLat = null;
+			var locationArr = [];
+			// H5 plus事件处理
+			function plusReady(){
+				if(!em||ws){return};
+				// 获取窗口对象
+				if(window.plus){
+					ws=plus.webview.currentWebview();
+					wo=ws.opener();
+					ws.show("pop-in");
+					pcenter = new plus.maps.Point(114.373164,30.589693);
+					setTimeout(function(){
+						map=new plus.maps.Map("map",{zoomControls:true});
+						map.centerAndZoom(pcenter,12);
+						initIcon(114.373164,30.589693);
+					},300);
+				}
+			}
+			if(window.plus){
+				plusReady();
+			}else{
+				document.addEventListener("plusready",plusReady,false);
+			}
+			
+			//获取用户位置
+			function userLocation(){
+				map.showUserLocation( true );
+				map.getUserLocation(function(state,pos){
+					if(0==state){
+						map.setCenter(pos);
+					}
+				});
+			}
+			
+			// DOMContentloaded事件处理
+			document.addEventListener("DOMContentLoaded", function() {
+				em = document.getElementById("map");
+				plusReady();
+			}, false);
+			
+			//初始化定位标记点和本地数据库
+			function initIcon(lng,lat) {
+				marker=new plus.maps.Marker(new plus.maps.Point(lng,lat));
+				marker.setIcon("/logo.png");
+				marker.setLabel("这里哦");
+				marker.setBubble( new plus.maps.Bubble("H"));
+				map.addOverlay(marker);
+				netstatus = plus.networkinfo.getCurrentType();
+				sqlTool = new SqlTool({dbname:'protal_db',version:'1.0.0', dbdesc:'管网巡检定位数据', dbsize:30*1024*1024});
+				sqlTable = sqlTool.creatTable("local_2017_07_09")
+			}
+			
+			//定位成功处理
+			function geoInf( position ) {
+				console.log(JSON.stringify(position));
+				if(!lastLng||!lastLat){
+					lastLng = position.coords.longitude;
+					lastLat = position.coords.latitude;
+				}
+				if(sqlTable){
+					sqlTable.addData( position.coords.longitude, position.coords.latitude);
+				}
+				//有网络上报地理位置
+				if(netstatus!==0||netstatus!==1){
+// 						$.ajax({
+// 							url:" ",
+// 							method:"POST",
+// 							data:{
+// 								
+// 							},
+// 							success:function(data){
+// 							},
+// 							error:function(error){
+// 							}
+// 						})
+				}
+				drawIcon(lastLng,lastLat,position.coords.longitude,position.coords.latitude);
+				lastLng = position.coords.longitude;
+				lastLat = position.coords.latitude;
+			}
+			
+			//获取地理位置
+			function getPos() {
+				start = true;
+				over = false;
+				plus.geolocation.getCurrentPosition( geoInf, function ( e ) {
+					console.log( "获取位置信息失败："+e.message );
+				}, {enableHighAccuracy:true,provider:"baidu",coordsType:"bd09ll",geocode:true} );
+			}
+			
+			//监听后台持续定位
+			document.addEventListener("pause",function(){
+				if(start){
+					interval = setInterval(getPos,5000);
+				}	
+			});
+			
+			//绘制当前定位标记点
+			function drawIcon(startLong, startLat, endLong, endLat) {
+				if(marker) {
+					map.removeOverlay(marker);
+				}
+				marker = new plus.maps.Marker(new plus.maps.Point(endLong, endLat));
+				marker.setIcon("../logo.png");
+				map.addOverlay(marker);
+				drawGreenLine(startLong, startLat, endLong, endLat);
+			}
+			
+			//绘制轨迹
+			function drawGreenLine(startLong, startLat, endLong, endLat) {
+				polyline = new plus.maps.Polyline([
+						new plus.maps.Point(startLong, startLat), //起始点的经纬度  
+						new plus.maps.Point(endLong, endLat) //终止点的经纬度  
+				]);
+				polyline.setStrokeColor("#ff0000");
+				polyline.setLineWidth(2);  
+				map.addOverlay(polyline);
+				console.log("--------正在绘制轨迹---------")
+			}
+			
+			//应用唤醒时清除后台定位监听
+			document.addEventListener("resume", function(){
+				window.clearInterval(interval);
+				if(!over){
+					watchPos()
+				}
+			}, false );
+			
+			//监测位置
+			function watchPos() {
+				watchId = setInterval(getPos,5000)
+			}
+			
+			//清除定位监测
+			function clearWatch() {
+				over = true
+				if(watchId){
+					window.clearInterval(watchId)
+				}
+				if(interval){
+					window.clearInterval(interval)
+				}	
+			}
+			
+		</script>
+		<link rel="stylesheet" href="../css/common.css" type="text/css" charset="utf-8"/>
+		<style type="text/css">
+			#map {
+				width: 100%;
+				position: fixed;
+				top: 65px;
+				bottom: 0px;
+				line-height: 200px;
+				text-align: center;
+				background: #FFFFFF;
+			}
+			.local{
+				position:fixed;
+				top:65px;
+				line-height: 20px;
+				left:50%;
+				transform: translateX(-50%);
+				z-index: 100;
+				text-align: center;
+				background-color: #fff;
+				color: #fff;
+			}
+			.getLocal{
+				background-color: #004444;
+			}
+			.watchLocal{
+				background-color: #f5a366;
+			}
+			.clearWatch{
+				background-color: #6894d8;
+			}
+			.ipos {
+				background: no-repeat center center url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAsCAYAAAAn4+taAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAwNC8wMS8xNExYUU4AAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzbovLKMAAACTklEQVRoge2YO2gUURSGv7PjEkULO4UoFooIFgtzprAPWMiWKewSTadgYWEhBjHCloGUQtYHaGEjGAQtUmgnZO9YpsqC2NgYIwjRInMscoPrYkzhGTIs8zdnzoP578ewM/eumBmjoMZ+L8BLNUjVVINUTTVI1VSDVE0jA3KgjJuGEE6LyI2iKC6JyBkzWxORF8ADVV0rw1O891ohhCngPnDyL+1PZjabZdkTV1OcQUIIV4CHMf0JvAK+A0eANjAWe1dV9ZGbMY6/kTzPzwHzMV0VkZaqTgLTqjopIi1gNfbnQwhnvbzBEcTMbgFHgXURaRdFsRFCWAa+hhCWi6LYEJE2sB7nbnp5g+9b62KMIU3Tvoh0gQm2Fz0hIt00TftAADCztqO3K8h4jJsAZnZ+sDmQ/wAQkXEc5QnyJcZjACLybLApIk/j5YmheRd5gryLMev1elOqesfMrpvZczO7pqqzvV5vGmgNzbvIDUREXsbLRES6IYTbzWZzMcuyy0mSPA4h3BWRxR3PgXkff6/vSJ7nx83sPXBqoLwJFEACHByofxSRC2mafnYxx/GJxEW9GSofAg7zJwTAa08I8N80doG9HrHx++vvJlcQVV0xs6V/zZjZkqquePpCOdv4OWBrl96WiNwrwdMfJMuyHFjYpb2gqh+8PaG8g9Uc0B+q9WO9FJUCoqrfgBm2X73EOBPrpai0o66qvgU6Me3EvDSVctTdUZIknaIoxhqNRmfv6f+T+1F3vzQy/6LUIFVTDVI11SBVUw1SNdUgVdPIgPwCtt+2JPQRVicAAAAASUVORK5CYII=);
+				background-size: 50px 44px;
+			}		
+		</style>
+	</head>
+	<body>
+		<header id="header">
+			<div class="nvbt iback" onclick="back();"></div>
+			<div class="nvtt">管网巡检</div>
+			<div class="nvbt ipos" onclick="userLocation();"></div>
+		</header>
+		<div class="local" onclick="getPos()">
+			<span class="watchLocal" onclick="watchPos()">监听定位</span><span class="clearWatch" onclick="clearWatch()">结束监听</span>
+		</div>
+		<div id="map">地图加载中...</div>
+	</body>
+	<script type="text/javascript" src="../js/immersed.js" ></script>
+</html>

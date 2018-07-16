@@ -1,0 +1,106 @@
+<!DOCTYPE HTML>
+<html>
+
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+        <title>轨迹</title>
+				<style type="text/css">
+					#map {
+						width: 100%;
+						position: fixed;
+						top: 65px;
+						bottom: 0px;
+						line-height: 200px;
+						text-align: center;
+						background: #FFFFFF;
+					}
+				</style>
+        <script type="text/javascript">
+            var em = null,
+                map = null;
+            var marker;
+            var a = 0;
+            var inter;
+            // H5 plus事件处理
+            function plusReady() {
+                // 确保DOM解析完成
+                if(!em || !window.plus || map) {
+                    return
+                };
+                map = new plus.maps.Map("map");
+                map.centerAndZoom(new plus.maps.Point(117.386792, 31.938675), 15);
+                //定时器每隔3秒执行一次goway方法。
+                inter = setInterval(goway,3000);
+            }
+            if(window.plus) {
+                plusReady();
+            } else {
+                document.addEventListener("plusready", plusReady, false);
+            }
+            // DOMContentloaded事件处理
+            document.addEventListener("DOMContentLoaded", function() {
+                em = document.getElementById("map");
+                plusReady();
+            }, false);
+            function goway(){
+            //记录goway方法执行的次数，执行20次后停止执行定时器
+             a++;
+            if(a<=20){
+                startLong = endLong;
+                startLat = endLat;
+                endLong = getRound(endLong);
+                endLat = getRound(endLat);
+                drawIcon(startLong, startLat, endLong, endLat);
+            }else{
+                clearInterval(inter);
+            }   
+            }
+            //产生随机坐标
+            function getRound(temp) {
+            var i = Math.round(Math.random() * 10);
+            if(i % 2 == 0) {
+                return temp + i * 0.0003;
+            } else {
+                return temp - i * 0.0003;
+            }
+        }
+            //产生动态的导航点
+            function drawIcon(startLong, startLat, endLong, endLat) {
+            if(marker) {
+                map.removeOverlay(marker);
+            }
+             marker = new plus.maps.Marker(new plus.maps.Point(endLong, endLat));
+             marker.setIcon("../logo.png");
+             map.addOverlay(marker);
+            drawGreenLine(startLong, startLat, endLong, endLat);
+        }
+            //动态画轨迹
+            function drawGreenLine(startLong, startLat, endLong, endLat) {
+            var polyline = new plus.maps.Polyline([
+                new plus.maps.Point(startLong, startLat), //起始点的经纬度  
+                new plus.maps.Point(endLong, endLat) //终止点的经纬度  
+            ]);
+              polyline.setStrokeColor("#1296db");
+              polyline.setLineWidth(10);  
+              map.addOverlay(polyline);
+        }
+        </script>
+    </head>
+
+    <body>
+				<header id="header">
+					<div class="nvbt iback" onclick="back()"></div>
+					<div class="nvtt">Maps</div>
+					<div class="nvbt idoc" onclick="openDoc('Maps Document','/doc/maps.html')"></div>
+				</header>
+        <div id="map">地图加载中...</div>
+    </body>
+
+</html>
+<script type="text/javascript">
+    var startLong = 117.356896;
+    var startLat = 31.9171;
+    var endLong = 117.386792;
+    var endLat = 31.938675;
+</script>
