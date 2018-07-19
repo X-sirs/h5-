@@ -60,9 +60,9 @@
 				marker.setLabel("这里哦");
 				marker.setBubble( new plus.maps.Bubble("H"));
 				map.addOverlay(marker);
-				netstatus = plus.networkinfo.getCurrentType();
-				sqlTool = new SqlTool({dbname:'protal_db',version:'1.0.0', dbdesc:'管网巡检定位数据', dbsize:30*1024*1024});
-				sqlTable = sqlTool.creatTable("local_2017_07_09")
+				netstatus = plus.networkinfo.getCurrentType();//获取网络状态
+				sqlTool = new SqlTool({dbname:'protal_db',version:'1.0.0', dbdesc:'管网巡检定位数据', dbsize:30*1024*1024});//创建sql数据库操作类
+				sqlTable = sqlTool.creatTable("local_2017_07_09")   //创建sql表
 			}
 			
 			//定位成功处理
@@ -77,17 +77,17 @@
 				}
 				//有网络上报地理位置
 				if(netstatus!==0||netstatus!==1){
-// 						$.ajax({
-// 							url:" ",
-// 							method:"POST",
-// 							data:{
-// 								
-// 							},
-// 							success:function(data){
-// 							},
-// 							error:function(error){
-// 							}
-// 						})
+						$.ajax({
+							url:" ",
+							method:"POST",
+							data:{
+								
+							},
+							success:function(data){
+							},
+							error:function(error){
+							}
+						})
 				}
 				drawIcon(lastLng,lastLat,position.coords.longitude,position.coords.latitude);
 				lastLng = position.coords.longitude;
@@ -112,7 +112,7 @@
 			
 			//绘制当前定位标记点
 			function drawIcon(startLong, startLat, endLong, endLat) {
-				if(marker) {
+				if(marker) {  //清除标记点
 					map.removeOverlay(marker);
 				}
 				marker = new plus.maps.Marker(new plus.maps.Point(endLong, endLat));
@@ -123,14 +123,13 @@
 			
 			//绘制轨迹
 			function drawGreenLine(startLong, startLat, endLong, endLat) {
-				polyline = new plus.maps.Polyline([
+				polyline = new plus.maps.Polyline([   //绘制轨迹
 						new plus.maps.Point(startLong, startLat), //起始点的经纬度  
 						new plus.maps.Point(endLong, endLat) //终止点的经纬度  
 				]);
 				polyline.setStrokeColor("#ff0000");
 				polyline.setLineWidth(2);  
-				map.addOverlay(polyline);
-				console.log("--------正在绘制轨迹---------")
+				map.addOverlay(polyline);  //添加轨迹到地图
 			}
 			
 			//应用唤醒时清除后台定位监听
